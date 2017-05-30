@@ -1,2 +1,2 @@
 # data-science
-A collection of data science projects
+A collection of data science projects to showcase proficiency.
