@@ -1,0 +1,104 @@
+# Retrieve keyword data from tweets
+# Written by Artin Gill
+# Coded in Python 3.6.0
+# Edit keyword items to your choosing
+
+"""
+Use Twitter API to gather tweets (filtered by keywords) and their frequencies, and then plot it.
+"""
+
+# Import packages
+import tweepy
+import json
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import re
+
+# Store OAuth authentication credentials in relevant variables
+# fill in with the custom values received from Twitter
+access_token = ""
+access_token_secret = ""
+consumer_key = ""
+consumer_secret = ""
+
+# Pass OAuth details to tweepy's OAuth handler
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token,access_token_secret)
+
+# set tweet listener that creates txt file, collects streaming tweets as jsons, writes to txt, then stops listening after 100 tweets
+class MyStreamListener(tweepy.StreamListener):
+    def __init__(self, api=None):
+        super(MyStreamListener, self).__init__()
+        self.num_tweets = 0
+        self.file = open("tweets.txt", "w")
+
+    def on_status(self, status):
+        tweet = status._json
+        self.file.write( json.dumps(tweet) + '\n' )
+        self.num_tweets += 1
+        if self.num_tweets < 100:
+            return True
+        else:
+            return False
+        self.file.close()
+
+    def on_error(self, status):
+print(status)
+
+# Initialize Stream listener
+l = MyStreamListener()
+
+# Create stream object with authentication
+stream = tweepy.Stream(auth, l)
+
+# Filter Twitter Streams to capture data by chosen keywords, edit keywords to your choosing:
+stream.filter(track=['keyword1','keyword2','keyword3'])
+
+# String of path to file: tweets_data_path
+tweets_data_path = 'tweets.txt'
+
+# Initialize empty list to store tweets: tweets_data
+tweets_data = []
+
+# Open connection to file
+tweets_file = open(tweets_data_path, "r")
+
+# Read in tweets and store in list: tweets_data
+for line in tweets_file:
+    tweet = json.loads(line)
+    tweets_data.append(tweet)
+
+# Close connection to file
+tweets_file.close()
+
+# Build DataFrame of tweet texts
+df = pd.DataFrame(tweets_data, columns=['text'])
+
+# Define the word_in_text function, which checks if a word occurs in a tweet
+def word_in_text(word, tweet):
+    word = word.lower()
+    text = tweet.lower()
+    match = re.search(word, tweet)
+
+    if match:
+        return True
+    return False
+
+# Initialize list to store tweet counts, edit keywords to your choosing
+[keyword1, keyword2, keyword3] = [0,0,0]
+
+# Iterate through df, counting the number of tweets in which each list item is mentioned
+for index, row in df.iterrows():
+    keyword1 += word_in_text('keyword1', row['text'])
+    keyword2 += word_in_text('keyword2', row['text'])
+    keyword3 += word_in_text('keyword3', row['text'])
+    
+# Create a list of labels:tl
+tl = ['keyword1', 'keyword2', 'keyword3']
+
+# Plot histogram
+sns.set(color_codes=True)
+ax = sns.barplot(tl, [keyword1,keyword2,keyword3])
+ax.set(ylabel="count")
+plt.show()
